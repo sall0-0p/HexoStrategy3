@@ -15,11 +15,16 @@ public class MainBuilder(World world, GameDefinition definition)
     {
         foreach (var def in definition.Provinces)
         {
-            world.Create(new ProvinceDetails
+            var entity = world.Create(
+                new ProvinceDetails(def.ProvinceId, def.Name),
+                new Terrain(def.TerrainType)
+                );
+
+            // Add if coastal (tag).
+            if (def.Coastal)
             {
-                Name = def.Name,
-                ProvinceId = def.ProvinceId,
-            });
+                world.Add(entity, new IsCoastal());
+            }
         }
     }
 }

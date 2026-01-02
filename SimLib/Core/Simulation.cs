@@ -38,6 +38,6 @@ internal class Simulation
 
     private WorldSnapshot CreateSnapshot()
     {
-        return _ecs.ExportState();
+        return _ecs.ExportState(_tickCount - 1);
     }
 }
