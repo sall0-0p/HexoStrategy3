@@ -19,8 +19,8 @@ internal class Simulation
         _world = World.Create();
         _ecs = new EcsManager(_world, typeof(JobSystemRunner));
         
-        _ecs.InitSystems();
         new WorldBuilder.MainBuilder(_world, _definition).Build();
+        _ecs.InitSystems();
     }
     
     public WorldSnapshot Tick(List<IOrder> orders)

@@ -1,5 +1,6 @@
 using Arch.Buffer;
 using Arch.Core;
+using Arch.Core.Extensions;
 using SimLib.Core.System;
 using SimLib.Core.System.Jobs;
 using SimLib.Modules.Map.Components;
@@ -16,8 +17,8 @@ public struct PrinterJob() : ISystemJob
         Console.WriteLine("There are {0} entities in a chunk!", entities.Length);
 
         var provinces = chunk.GetArray<ProvinceDetails>();
-        
-        foreach (var details in provinces)
+        var span = provinces.AsSpan(0, chunk.Count);
+        foreach (ref var details in span)
         {
             Console.WriteLine("{0}: {1}", details.ProvinceId, details.Name);
         }

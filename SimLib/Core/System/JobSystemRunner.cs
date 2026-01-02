@@ -52,19 +52,18 @@ public class JobSystemRunner : ISystemRunner
         }
     }
 
-    private void RunJobParallel(Jobs.ISystemJob job)
+    private void RunJobParallel(ISystemJob job)
     {
-        var chunks = new List<Chunk>();
         var queryDesc = job.Query;
-        _world.Query(in queryDesc, (ref Chunk c) => chunks.Add(c));
-        
-        Parallel.ForEach(chunks, (chunk) =>
+        var query = _world.Query(in queryDesc);
+
+        foreach (var chunk in query.GetChunkIterator())
         {
             var threadId = Environment.CurrentManagedThreadId % _threadBuffers.Length;
             var buffer = _threadBuffers[threadId];
             var context = new JobContext(threadId);
             
             job.Execute(context, _world, buffer, chunk);
-        });
+        }
     }
 }
