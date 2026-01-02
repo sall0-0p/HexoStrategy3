@@ -1,27 +1,16 @@
 using Arch.Buffer;
 using Arch.Core;
-using Arch.Core.Extensions;
 using SimLib.Core.System;
 using SimLib.Core.System.Jobs;
 using SimLib.Modules.Map.Components;
 
 namespace SimLib.Modules.Map.Systems;
 
-public struct PrinterJob() : ISystemJob
+public struct PrinterJob() : IJob<ProvinceDetails> 
 {
-    public QueryDescription Query { get; } = new QueryDescription().WithAll<ProvinceDetails>();
- 
-    public void Execute(JobContext context, World world, CommandBuffer buffer, Chunk chunk)
+    public void Execute(JobContext context, World world, CommandBuffer buffer, ref ProvinceDetails details)
     {
-        var entities = chunk.Entities;
-        Console.WriteLine("There are {0} entities in a chunk!", entities.Length);
-
-        var provinces = chunk.GetArray<ProvinceDetails>();
-        var span = provinces.AsSpan(0, chunk.Count);
-        foreach (ref var details in span)
-        {
-            Console.WriteLine("{0}: {1}", details.ProvinceId, details.Name);
-        }
+        Console.WriteLine("{0}: {1} (t: {2})", details.ProvinceId, details.Name, context.ThreadIndex);
     }
 }
 

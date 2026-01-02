@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Arch.Buffer;
 using Arch.Core;
 using SimLib.Core.System.Jobs;
@@ -8,19 +9,10 @@ public class JobSystemRunner : ISystemRunner
 {
     private readonly World _world;
     private readonly List<ISimulationSystem> _systems = [];
-    private readonly CommandBuffer[] _threadBuffers;
     
     public JobSystemRunner(World world)
     {
         _world = world;
-
-        int threadCount = Environment.ProcessorCount;
-        _threadBuffers = new CommandBuffer[threadCount];
-        
-        for (var i = 0; i < threadCount; i++)
-        {
-            _threadBuffers[i] = new CommandBuffer();
-        }
     }
     
     public void RegisterSystem(ISimulationSystem system)
@@ -45,25 +37,40 @@ public class JobSystemRunner : ISystemRunner
         {
             RunJobParallel(job);
         }
-
-        foreach (var buffer in _threadBuffers)
-        {
-            buffer.Playback(_world);
-        }
     }
 
     private void RunJobParallel(ISystemJob job)
     {
+        var chunks = new List<Chunk>();
         var queryDesc = job.Query;
         var query = _world.Query(in queryDesc);
 
-        foreach (var chunk in query.GetChunkIterator())
+        foreach (var c in query.GetChunkIterator())
         {
-            var threadId = Environment.CurrentManagedThreadId % _threadBuffers.Length;
-            var buffer = _threadBuffers[threadId];
-            var context = new JobContext(threadId);
+            chunks.Add(c);
+        }
+        
+        var usedBuffers = new ConcurrentBag<CommandBuffer>();
+        Parallel.ForEach(
+            chunks, 
+            () => new CommandBuffer(), 
+            (chunk, loopState, localBuffer) => 
+            {
+                var context = new JobContext(Environment.CurrentManagedThreadId);
+                job.Execute(context, _world, localBuffer, chunk);
             
-            job.Execute(context, _world, buffer, chunk);
+                return localBuffer;
+            },
+            
+            (finalBuffer) => 
+            {
+                usedBuffers.Add(finalBuffer);
+            }
+        );
+        
+        foreach (var buffer in usedBuffers)
+        {
+            buffer.Playback(_world);
         }
     }
 }
