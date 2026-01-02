@@ -5,16 +5,10 @@ using SimLib.Core;
 
 namespace SimLib.Api.Core;
 
-public class SimCore
+public class SimCore(GameDefinition definition)
 {
-    private readonly GameDefinition _definition;
-    private readonly Simulation _simulation;
-    
-    public SimCore(GameDefinition definition)
-    {
-        _definition = definition;
-        _simulation = new Simulation(definition);
-    }
+    private readonly GameDefinition _definition = definition;
+    private readonly Simulation _simulation = new Simulation(definition);
 
     public WorldSnapshot TickSimulation(List<IOrder> orders)
     {

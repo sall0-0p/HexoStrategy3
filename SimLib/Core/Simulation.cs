@@ -2,6 +2,7 @@ using Arch.Core;
 using SimLib.Api.Data;
 using SimLib.Api.Order;
 using SimLib.Api.State;
+using SimLib.Core.System;
 
 namespace SimLib.Core;
 
@@ -16,8 +17,9 @@ internal class Simulation
     {
         _definition = definition;
         _world = World.Create();
-        _ecs = new EcsManager(_world);
+        _ecs = new EcsManager(_world, typeof(JobSystemRunner));
         
+        _ecs.InitSystems();
         new WorldBuilder.MainBuilder(_world, _definition).Build();
     }
     

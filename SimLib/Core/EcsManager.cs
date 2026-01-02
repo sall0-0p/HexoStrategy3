@@ -1,26 +1,25 @@
 using Arch.Core;
 using SimLib.Api.State;
 using SimLib.Api.State.Views;
+using SimLib.Core.System;
 using SimLib.Modules.Map.Components;
+using SimLib.Modules.Map.Systems;
 
 namespace SimLib.Core;
 
-public class EcsManager(World world)
+public class EcsManager(World world, Type runnerType)
 {
+    private ISystemRunner runner;
+    
+    public void InitSystems()
+    {
+        runner = (ISystemRunner) Activator.CreateInstance(runnerType, world)!;
+        runner.RegisterSystem(new PrinterSystem());
+    }
+    
     public void RunSystems()
     {
-        var provincesQuery = new QueryDescription().WithAll<ProvinceDetails, Terrain>();
-        world.Query(in provincesQuery, (Entity entity, ref ProvinceDetails provinceData, ref Terrain terrain) =>
-        {
-            bool isCoastal = world.Has<IsCoastal>(entity);
-            Console.WriteLine("Id: {0}:{1}, Name: {2}, Terrain: {3}, Coastal: {4}", 
-                entity.Id, 
-                provinceData.ProvinceId, 
-                provinceData.Name, 
-                terrain.Type, 
-                isCoastal
-                ); 
-        });
+        runner.RunTick(world);
     }
 
     public WorldSnapshot ExportState(int tickNumber)
