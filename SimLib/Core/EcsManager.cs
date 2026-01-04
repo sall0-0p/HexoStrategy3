@@ -1,37 +1,62 @@
 using Arch.Core;
 using SimLib.Api.State;
 using SimLib.Api.State.Views;
+using SimLib.Core.Hash;
 using SimLib.Core.System;
 using SimLib.Modules.Map.Components;
 using SimLib.Modules.Map.Systems;
 
 namespace SimLib.Core;
 
-public class EcsManager(World world, Type runnerType)
+public class EcsManager
 {
-    private ISystemRunner runner;
+    private readonly ISystemRunner _systemRunner;
+    private readonly HashManager _hashManager;
+    private readonly HashingService _hashingService;
+    private readonly World _world;
+
+    public EcsManager(World world, Type runnerType)
+    {
+        _world = world;
+        _systemRunner = (ISystemRunner) Activator.CreateInstance(runnerType, world)!;
+        _hashManager = new HashManager();
+        _hashingService = new HashingService(_hashManager);
+    }
     
     public void InitSystems()
     {
-        runner = (ISystemRunner) Activator.CreateInstance(runnerType, world)!;
-        runner.RegisterSystem(new PrinterSystem());
+        _systemRunner.RegisterSystem(new PrinterSystem());
     }
     
     public void RunSystems()
     {
-        runner.RunTick(world);
+        _systemRunner.RunTick(_world);
+        RunHashing();
     }
 
+    private void RunHashing()
+    {
+        var dirtyChunks = _systemRunner.GetDirtyChunks();
+
+        if (dirtyChunks.Any())
+        {
+            _hashingService.ProcessDirtyChunks(_world, new HashSet<Chunk>(dirtyChunks));
+            _systemRunner.ClearDirtyChunks();
+        }
+        
+        _hashManager.RecomputeWorldHash();
+        Console.WriteLine(_hashManager.WorldHash);
+    }
+    
     public WorldSnapshot ExportState(int tickNumber)
     {
         return new WorldSnapshot
         {
             TickNumber = tickNumber,
-            Checksum = 0,
+            Checksum = (long) _hashManager.WorldHash,
             Provinces = ExtractViews((ref ProvinceDetails details) => new ProvinceView
             {
                 ProvinceId = details.ProvinceId,
-                Name = details.Name,
             })
         };
     }
@@ -41,7 +66,7 @@ public class EcsManager(World world, Type runnerType)
         var result = new List<TView>();
         var query = new QueryDescription().WithAll<TComponent>();
 
-        world.Query(in query, (ref TComponent component) => 
+        _world.Query(in query, (ref TComponent component) => 
         {
             result.Add(mapper(ref component));
         });

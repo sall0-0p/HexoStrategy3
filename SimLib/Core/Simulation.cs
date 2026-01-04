@@ -17,7 +17,7 @@ internal class Simulation
     {
         _definition = definition;
         _world = World.Create();
-        _ecs = new EcsManager(_world, typeof(JobSystemRunner));
+        _ecs = new EcsManager(_world, typeof(JobParallelRunner));
         
         new WorldBuilder.MainBuilder(_world, _definition).Build();
         _ecs.InitSystems();

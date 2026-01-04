@@ -1,15 +1,17 @@
+using System.Collections.Concurrent;
 using Arch.Buffer;
 using Arch.Core;
 using SimLib.Core.System.Jobs;
 namespace SimLib.Core.System;
 
-public class JobSystemRunner : ISystemRunner
+public class JobParallelRunner : ISystemRunner
 {
     private readonly World _world;
     private readonly List<ISimulationSystem> _systems = [];
     private readonly CommandBuffer[] _threadBuffers;
+    private readonly ConcurrentBag<Chunk> _dirtyChunks = [];
 
-    public JobSystemRunner(World world)
+    public JobParallelRunner(World world)
     {
         _world = world;
         
@@ -30,6 +32,8 @@ public class JobSystemRunner : ISystemRunner
 
     public void RunTick(World world)
     {
+        _dirtyChunks.Clear();
+        
         foreach (var system in _systems)
         {
             if (system.ShouldRun())
@@ -42,6 +46,16 @@ public class JobSystemRunner : ISystemRunner
         {
             buffer.Playback(_world);
         }
+    }
+
+    public IEnumerable<Chunk> GetDirtyChunks()
+    {
+        return _dirtyChunks;
+    }
+
+    public void ClearDirtyChunks()
+    {
+        _dirtyChunks.Clear();
     }
 
     private void RunJobParallel(ISystemJob job)
@@ -73,7 +87,10 @@ public class JobSystemRunner : ISystemRunner
             
             for (var i = start; i < end; i++)
             {
+                var chunk = chunks[i];
                 job.Execute(context, _world, buffer, chunks[i]);
+                
+                _dirtyChunks.Add(chunk);
             }
         });
     }

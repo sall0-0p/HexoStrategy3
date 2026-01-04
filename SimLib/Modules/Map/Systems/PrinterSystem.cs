@@ -6,11 +6,12 @@ using SimLib.Modules.Map.Components;
 
 namespace SimLib.Modules.Map.Systems;
 
-public struct PrinterJob() : IJob<ProvinceDetails> 
+public struct PrinterJob : IJob<ProvinceDetails> 
 {
-    public void Execute(JobContext context, World world, CommandBuffer buffer, ref ProvinceDetails details)
+    public bool Execute(JobContext context, World world, CommandBuffer buffer, ref ProvinceDetails details)
     {
-        Console.WriteLine("{0}: {1} (t: {2})", details.ProvinceId, details.Name, context.ThreadIndex);
+        Console.WriteLine("{0} (t: {1})", details.ProvinceId, context.ThreadIndex);
+        return false;
     }
 }
 

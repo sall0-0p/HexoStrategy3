@@ -3,17 +3,15 @@
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
     </PropertyGroup>
-
-    <ItemGroup>
-      <Folder Include="Utils\" />
-    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Arch" Version="2.1.0-beta" />
       <PackageReference Include="Arch.System" Version="1.1.0" />
       <PackageReference Include="Arch.System.SourceGenerator" Version="2.1.0" />
+      <PackageReference Include="System.IO.Hashing" Version="10.0.1" />
     </ItemGroup>
 
 </Project>
