@@ -5,7 +5,5 @@ namespace SimLib.Core.System;
 public interface ISystemRunner
 {
     void RegisterSystem(ISimulationSystem system);
-    void RunTick(World world);
-    IEnumerable<Chunk> GetDirtyChunks();
-    void ClearDirtyChunks();
+    void RunTick();
 }

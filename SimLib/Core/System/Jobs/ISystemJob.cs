@@ -7,5 +7,5 @@ public interface ISystemJob
 {
     QueryDescription Query { get; }
 
-    bool Execute(JobContext context, World world, CommandBuffer buffer, Chunk chunk);
+    void Execute(JobContext context, World world, CommandBuffer buffer, Chunk chunk);
 }

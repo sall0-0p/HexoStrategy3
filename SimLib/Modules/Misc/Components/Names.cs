@@ -9,7 +9,7 @@ public struct LocalisedName(int id)
 
 public struct CustomName
 {
-    private FixedString32 Value;
+    public FixedString32 Value;
     
     public CustomName(string name)
     {

@@ -4,5 +4,8 @@ using SimLib.Api.Core;
 var definition = GameLoader.LoadDefinition();
 var core = new SimCore(definition);
 
-core.TickSimulation([]);
-Console.WriteLine("Done!");
+for (var i = 0; i < 100; i++)
+{
+    Console.WriteLine("Tick {0}!", i);
+    core.TickSimulation([]);
+}

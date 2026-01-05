@@ -6,14 +6,15 @@ namespace SimLib.Core.System;
 
 public class JobParallelRunner : ISystemRunner
 {
-    private readonly World _world;
+    private readonly World _simWorld;
+    private readonly World _renderWorld;
     private readonly List<ISimulationSystem> _systems = [];
     private readonly CommandBuffer[] _threadBuffers;
-    private readonly ConcurrentBag<Chunk> _dirtyChunks = [];
 
-    public JobParallelRunner(World world)
+    public JobParallelRunner(World simWorld, World renderWorld)
     {
-        _world = world;
+        _simWorld = simWorld;
+        _renderWorld = renderWorld;
         
         var threadCount = Environment.ProcessorCount;
         _threadBuffers = new CommandBuffer[threadCount];
@@ -27,13 +28,11 @@ public class JobParallelRunner : ISystemRunner
     public void RegisterSystem(ISimulationSystem system)
     {
         _systems.Add(system);
-        system.Initialise(_world);
+        system.Initialise(_simWorld);
     }
 
-    public void RunTick(World world)
+    public void RunTick()
     {
-        _dirtyChunks.Clear();
-        
         foreach (var system in _systems)
         {
             if (system.ShouldRun())
@@ -44,24 +43,15 @@ public class JobParallelRunner : ISystemRunner
         
         foreach (var buffer in _threadBuffers)
         {
-            buffer.Playback(_world);
+            buffer.Playback(_simWorld, false);
+            buffer.Playback(_renderWorld, false);
         }
-    }
-
-    public IEnumerable<Chunk> GetDirtyChunks()
-    {
-        return _dirtyChunks;
-    }
-
-    public void ClearDirtyChunks()
-    {
-        _dirtyChunks.Clear();
     }
 
     private void RunJobParallel(ISystemJob job)
     {
         var queryDesc = job.Query;
-        var query = _world.Query(in queryDesc);
+        var query = _simWorld.Query(in queryDesc);
         
         var chunks = new List<Chunk>();
         foreach (var chunk in query.GetChunkIterator())
@@ -87,10 +77,7 @@ public class JobParallelRunner : ISystemRunner
             
             for (var i = start; i < end; i++)
             {
-                var chunk = chunks[i];
-                job.Execute(context, _world, buffer, chunks[i]);
-                
-                _dirtyChunks.Add(chunk);
+                job.Execute(context, _simWorld, buffer, chunks[i]);
             }
         });
     }

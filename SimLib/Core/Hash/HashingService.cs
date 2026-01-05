@@ -4,12 +4,16 @@ using Arch.Core;
 
 namespace SimLib.Core.Hash;
 
-public class HashingService(HashManager hashManager)
+public readonly record struct ChunkKey(int ArchetypeHash, int ChunkIndex);
+
+public class HashingService()
 {
     private readonly XxHash3 _hasher = new();
 
-    public void ProcessDirtyChunks(World world, HashSet<Chunk> dirtyChunks)
+    public ulong ComputeWorldHash(World world)
     {
+        Dictionary<ChunkKey, ulong> chunkHashes = [];
+        
         var queryDesc = new QueryDescription(); 
         var query = world.Query(in queryDesc);
         
@@ -20,17 +24,22 @@ public class HashingService(HashManager hashManager)
 
             foreach (var chunk in archetype)
             {
-                if (dirtyChunks.Contains(chunk))
-                {
-                    var key = new ChunkKey(archHash, chunkIndex);
-                    var hash = ComputeChunkHash(chunk);
-                    
-                    hashManager.SetChunkHash(key, hash);
-                }
-
+                var key = new ChunkKey(archHash, chunkIndex);
+                var hash = ComputeChunkHash(chunk);
+                
+                chunkHashes[key] = hash;
                 chunkIndex++;
             }
         }
+        
+        ulong accumulator = 0;
+        
+        foreach (var hash in chunkHashes.Values)
+        {
+            accumulator ^= hash;
+        }
+        
+        return accumulator;
     }
     
     private ulong ComputeChunkHash(Chunk chunk)
@@ -44,12 +53,8 @@ public class HashingService(HashManager hashManager)
             if (componentArray.Length == 0) continue;
 
             Type elementType = componentArray.GetType().GetElementType()!;
-            if (!elementType.IsValueType)
-            {
-                Console.WriteLine("WARNING! NON VALUE TYPE DETECTED IN COMPONENT {0}", elementType);
-                continue;
-            };
-
+            if (!elementType.IsValueType) continue;
+            
             int elementSize = Marshal.SizeOf(elementType);
             if (elementSize == 0) continue;
                 

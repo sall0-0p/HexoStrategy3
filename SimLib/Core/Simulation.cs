@@ -9,21 +9,24 @@ namespace SimLib.Core;
 internal class Simulation
 {
     private readonly EcsManager _ecs;
-    private readonly World _world;
+    private readonly World _simWorld;
+    private readonly World _renderWorld;
     private readonly GameDefinition _definition;
     private int _tickCount = 0;
 
     public Simulation(GameDefinition definition)
     {
         _definition = definition;
-        _world = World.Create();
-        _ecs = new EcsManager(_world, typeof(JobParallelRunner));
+        _simWorld = World.Create();
+        _renderWorld = World.Create();
+        _ecs = new EcsManager(_simWorld, _renderWorld, typeof(JobParallelRunner));
         
-        new WorldBuilder.MainBuilder(_world, _definition).Build();
+        new WorldBuilder.MainBuilder(_simWorld, _definition).Build();
+        new WorldBuilder.MainBuilder(_renderWorld, _definition).Build();
         _ecs.InitSystems();
     }
     
-    public WorldSnapshot Tick(List<IOrder> orders)
+    public WorldState Tick(List<IOrder> orders)
     {
         ApplyOrders(orders);
         
@@ -38,7 +41,7 @@ internal class Simulation
         
     }
 
-    private WorldSnapshot CreateSnapshot()
+    private WorldState CreateSnapshot()
     {
         return _ecs.ExportState(_tickCount - 1);
     }
