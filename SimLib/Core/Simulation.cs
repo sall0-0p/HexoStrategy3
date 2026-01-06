@@ -1,6 +1,8 @@
 using Arch.Core;
+using Arch.Persistence;
 using SimLib.Api.Data;
 using SimLib.Api.Order;
+using SimLib.Api.Save;
 using SimLib.Api.State;
 using SimLib.Core.System;
 
@@ -8,10 +10,10 @@ namespace SimLib.Core;
 
 internal class Simulation
 {
-    private readonly EcsManager _ecs;
-    private readonly World _simWorld;
-    private readonly World _renderWorld;
     private readonly GameDefinition _definition;
+    private EcsManager _ecs;
+    private World _simWorld;
+    private World _renderWorld;
     private int _tickCount = 0;
 
     public Simulation(GameDefinition definition)
@@ -44,5 +46,31 @@ internal class Simulation
     private WorldState CreateSnapshot()
     {
         return _ecs.ExportState(_tickCount - 1);
+    }
+    
+    // Saving / loading of state;
+    public SaveState GetSave()
+    {
+        var serializer = new ArchBinarySerializer([]);
+
+        return new SaveState()
+        {
+            LastTick = _tickCount,
+            World = serializer.Serialize(_simWorld),
+        };
+    }
+
+    public void LoadSave(SaveState save)
+    {
+        var serializer = new ArchBinarySerializer();
+        _simWorld.Dispose();
+        _renderWorld.Dispose();
+
+        _tickCount = save.LastTick;
+        _simWorld = serializer.Deserialize(save.World);
+        _renderWorld = serializer.Deserialize(save.World);
+        
+        _ecs = new EcsManager(_simWorld, _renderWorld, typeof(JobParallelRunner));
+        _ecs.InitSystems();
     }
 }

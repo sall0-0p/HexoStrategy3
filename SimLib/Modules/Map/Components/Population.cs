@@ -1,7 +1,7 @@
 namespace SimLib.Modules.Map.Components;
 
-public struct Population(int startingValue, int growthPerTick)
+public struct Population(int quantity, int growth)
 {
-    public int Quantity = startingValue;
-    public int Growth = growthPerTick;
+    public int Quantity = quantity;
+    public int Growth = growth;
 }

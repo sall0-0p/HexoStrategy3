@@ -17,4 +17,9 @@ public struct CustomName
         initial.Value = name;
         Value = initial;
     }
+
+    public CustomName(FixedString32 value)
+    {
+        Value = value;
+    }
 }
