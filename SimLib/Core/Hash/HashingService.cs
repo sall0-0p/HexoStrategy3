@@ -10,6 +10,50 @@ public class HashingService()
 {
     private readonly XxHash3 _hasher = new();
 
+    public void ComputeWorldHashDebug(World world)
+    {
+        Dictionary<string, ulong> componentHashes = new();
+
+        var queryDesc = new QueryDescription(); 
+        var query = world.Query(in queryDesc);
+        
+        foreach (var archetype in query.GetArchetypeIterator())
+        {
+            foreach (var chunk in archetype)
+            {
+                var componentArrays = chunk.Components;
+                foreach (var componentArray in componentArrays)
+                {
+                    if (componentArray.Length == 0) continue;
+
+                    Type elementType = componentArray.GetType().GetElementType()!;
+                    if (!elementType.IsValueType) continue;
+
+                    int elementSize = Marshal.SizeOf(elementType);
+                    int validByteLength = chunk.Count * elementSize;
+                    
+                    ref byte start = ref MemoryMarshal.GetArrayDataReference(componentArray);
+                    var bytes = MemoryMarshal.CreateReadOnlySpan(ref start, validByteLength);
+                    
+                    _hasher.Reset();
+                    _hasher.Append(bytes);
+                    ulong hash = _hasher.GetCurrentHashAsUInt64();
+
+                    string name = elementType.Name;
+                    if (!componentHashes.ContainsKey(name)) componentHashes[name] = 0;
+                    componentHashes[name] ^= hash;
+                }
+            }
+        }
+        
+        Console.WriteLine("--- Hash Breakdown ---");
+        foreach (var kvp in componentHashes)
+        {
+            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+        }
+        Console.WriteLine("----------------------");
+    }
+        
     public ulong ComputeWorldHash(World world)
     {
         Dictionary<ChunkKey, ulong> chunkHashes = [];
@@ -59,9 +103,9 @@ public class HashingService()
             if (elementSize == 0) continue;
                 
             ref byte start = ref MemoryMarshal.GetArrayDataReference(componentArray);
-            int totalByteLength = componentArray.Length * elementSize;
+            int validByteLength = chunk.Count * elementSize;
                 
-            var bytes = MemoryMarshal.CreateReadOnlySpan(ref start, totalByteLength);
+            var bytes = MemoryMarshal.CreateReadOnlySpan(ref start, validByteLength);
             _hasher.Append(bytes);
         }
             

@@ -44,6 +44,8 @@ public class EcsManager
         Console.WriteLine("Render Hash: {0}", renderHash);
         Console.WriteLine("Are sim and render hash the same? {0}", simHash == renderHash);
         _latestSimHash = simHash;
+
+        _hashingService.ComputeWorldHashDebug(_simWorld);
     }
 
     private void SyncRenderWorld()
